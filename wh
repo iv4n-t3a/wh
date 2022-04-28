@@ -4,8 +4,6 @@ import sys
 import requests
 from bs4 import BeautifulSoup as bs
 
-import config
-
 translate_queue = sys.argv[1:]
 
 class Output:
@@ -29,11 +27,9 @@ class Output:
 
 
 class TranslateSession:
-    __userAgent = ''
     __requestsSession = None
 
-    def __init__(self, userAgent):
-        self.__userAgent = userAgent
+    def __init__(self):
         self.__requestsSession = requests.Session()
 
     def __upload_page(self, query):
@@ -69,7 +65,7 @@ class TranslateSession:
             return self.__parse_unfound_word(soup)
 
 if __name__ == '__main__':
-    session = TranslateSession(config.user_agent)
+    session = TranslateSession()
     for arg in translate_queue:
         output = session.translate(arg)
         print(output)
