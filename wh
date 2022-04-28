@@ -1,0 +1,75 @@
+#! /usr/bin/python3
+
+import sys
+import requests
+from bs4 import BeautifulSoup as bs
+
+import config
+
+translate_queue = sys.argv[1:]
+
+class Output:
+    def __init__(self, content):
+        self.__content = content
+
+    def __str__(self):
+        try:
+            result =  f"""
+{self.__content['header']}
+{self.__content['results']}
+            """
+        except:
+            if self.__content['similar_words'] != []:
+                translate_queue.append(self.__content['similar_words'])
+                result = ''
+            else:
+                result =  "unable to find anything"
+
+        return result
+
+
+class TranslateSession:
+    __userAgent = ''
+    __requestsSession = None
+
+    def __init__(self, userAgent):
+        self.__userAgent = userAgent
+        self.__requestsSession = requests.Session()
+
+    def __upload_page(self, query):
+        response = requests.get(f"https://wooordhunt.ru/word/{query}") 
+        soup = bs(response.content, 'html.parser')
+        return soup
+
+    def __parse_unfound_word(self, soup):
+        similar_words = [i.text for i in soup.find(id='word_not_found').find_all(tag='a')]
+        content = {'similar_words' : similar_words}
+        return Output(content)
+
+    def __translate_en_to_ru(self, soup):
+        content = {}
+        content['header'] = soup.find(id='wd_title').text.split()[0]
+        content['results'] = soup.find(attrs = {'class' : 't_inline_en'}).text
+        return Output(content)
+
+    def __translate_ru_to_en(self, soup):
+        content = {}
+        content['header'] = soup.find(id='wd_title').text.split()[0]
+        content['results'] = soup.find(attrs = {'class' : 't_inline'}).text
+        return Output(content)
+
+    def translate(self, query):
+        soup = self.__upload_page(query)
+        try:
+            try:
+                return self.__translate_ru_to_en(soup)
+            except:
+                return self.__translate_en_to_ru(soup)
+        except:
+            return self.__parse_unfound_word(soup)
+
+if __name__ == '__main__':
+    session = TranslateSession(config.user_agent)
+    for arg in translate_queue:
+        output = session.translate(arg)
+        print(output)
