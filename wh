@@ -1,4 +1,5 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3
+
 
 import sys
 import requests
@@ -6,25 +7,15 @@ from bs4 import BeautifulSoup as bs
 
 translate_queue = sys.argv[1:]
 
-class Output:
-    def __init__(self, content):
-        self.__content = content
-
-    def __str__(self):
+def format(content):
+    try:
+        return f"{content['header']}\n{content['results']}"
+    except:
         try:
-            result =  f"""
-{self.__content['header']}
-{self.__content['results']}
-            """
+            translate_queue.append(content['similar_word'])
+            return "there is nothing for your query, did you mean:"
         except:
-            if self.__content['similar_words'] != []:
-                translate_queue.append(self.__content['similar_words'])
-                result = ''
-            else:
-                result =  "unable to find anything"
-
-        return result
-
+            return "unable to find anything"
 
 class TranslateSession:
     __requestsSession = None
@@ -32,37 +23,45 @@ class TranslateSession:
     def __init__(self):
         self.__requestsSession = requests.Session()
 
+    def translate(self, query):
+        soup = self.__upload_page(query)
+        if is_russian_text(query):
+            results = self.__translate_ru_to_en(soup)
+        else:
+            results = self.__translate_en_to_ru(soup)
+
+        results['header'] = query
+
+        if not 'results' in results:
+            results = self.__parse_unfound_word(soup)
+ 
+        return format(results)
+
     def __upload_page(self, query):
-        response = requests.get(f"https://wooordhunt.ru/word/{query}") 
+        response = requests.get(f'https://wooordhunt.ru/word/{query}') 
         soup = bs(response.content, 'html.parser')
         return soup
 
-    def __parse_unfound_word(self, soup):
-        similar_words = [i.text for i in soup.find(id='word_not_found').find_all(tag='a')]
-        content = {'similar_words' : similar_words}
-        return Output(content)
-
     def __translate_en_to_ru(self, soup):
-        content = {}
-        content['header'] = soup.find(id='wd_title').text.split()[0]
-        content['results'] = soup.find(attrs = {'class' : 't_inline_en'}).text
-        return Output(content)
+        return TranslateSession.__init_dict(soup.find(attrs = {'class': 't_inline_en'}), 'results')
 
     def __translate_ru_to_en(self, soup):
-        content = {}
-        content['header'] = soup.find(id='wd_title').text.split()[0]
-        content['results'] = soup.find(attrs = {'class' : 't_inline'}).text
-        return Output(content)
+        return TranslateSession.__init_dict(soup.find(attrs = {'class': 't_inline'}), 'results')
+    
+    def __parse_unfound_word(self, soup):
+        return TranslateSession.__init_dict(soup.find(attrs = {'class': 'possible_variant'}), 'similar_word')
+    
+    @staticmethod
+    def __init_dict(bs_obj, key):
+        if bs_obj is None:
+            return {}
+        else:
+            return {key: bs_obj.text}
 
-    def translate(self, query):
-        soup = self.__upload_page(query)
-        try:
-            try:
-                return self.__translate_ru_to_en(soup)
-            except:
-                return self.__translate_en_to_ru(soup)
-        except:
-            return self.__parse_unfound_word(soup)
+def is_russian_text(text):
+    ALPHABET = set('абвгдеёжзийклмнопрстуфхцчшщъыьэюя')
+    return not ALPHABET.isdisjoint(text)
+
 
 if __name__ == '__main__':
     session = TranslateSession()
