@@ -64,7 +64,10 @@ def is_russian_text(text):
 
 
 if __name__ == '__main__':
-    session = TranslateSession()
-    for arg in translate_queue:
-        output = session.translate(arg)
-        print(output)
+    try:
+        session = TranslateSession()
+        for arg in translate_queue:
+            output = session.translate(arg)
+            print(output)
+    except:
+        print('no connection')
