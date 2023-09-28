@@ -1,4 +1,4 @@
-# Консольный клиент сайта [wooordhunt](wooordhunt.ru)
+# Консольный клиент сайта [wooordhunt](https://wooordhunt.ru)
 
 ## Использование и демо
 
