@@ -34,11 +34,11 @@ class TranslateSession:
 
         if not 'results' in results:
             results = self.__parse_unfound_word(soup)
- 
+
         return format(results)
 
     def __upload_page(self, query):
-        response = requests.get(f'https://wooordhunt.ru/word/{query}') 
+        response = requests.get(f'https://wooordhunt.ru/word/{query}')
         soup = bs(response.content, 'html.parser')
         return soup
 
@@ -47,10 +47,10 @@ class TranslateSession:
 
     def __translate_ru_to_en(self, soup):
         return TranslateSession.__init_dict(soup.find(attrs = {'class': 't_inline'}), 'results')
-    
+
     def __parse_unfound_word(self, soup):
         return TranslateSession.__init_dict(soup.find(attrs = {'class': 'possible_variant'}), 'similar_word')
-    
+
     @staticmethod
     def __init_dict(bs_obj, key):
         if bs_obj is None:
